@@ -2,6 +2,19 @@
 // Устанавливаем кодировку UTF-8
 header('Content-Type: text/html; charset=UTF-8');
 
+// Инициализируем массивы для ошибок и введённых данных
+$errors = [];
+$values = [
+    'fio' => '',
+    'phone' => '',
+    'email' => '',
+    'dob' => '',
+    'gender' => '',
+    'languages' => [],
+    'bio' => '',
+    'contract' => false
+];
+
 // Если метод GET – просто отображаем форму
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     if (!empty($_GET['save'])) {
@@ -11,50 +24,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     exit();
 }
 
-// Инициализируем массив для ошибок
-$errors = [];
+// Сохранение введённых данных
+$values['fio'] = $_POST['fio'] ?? '';
+$values['phone'] = $_POST['phone'] ?? '';
+$values['email'] = $_POST['email'] ?? '';
+$values['dob'] = $_POST['dob'] ?? '';
+$values['gender'] = $_POST['gender'] ?? '';
+$values['languages'] = $_POST['languages'] ?? [];
+$values['bio'] = $_POST['bio'] ?? '';
+$values['contract'] = isset($_POST['contract']) ? true : false;
 
 // Проверка поля ФИО
-if (empty($_POST['fio'])) {
+if (empty($values['fio'])) {
     $errors[] = 'Заполните ФИО.';
-} elseif (!preg_match('/^[a-zA-Zа-яА-Я\s]{1,150}$/u', $_POST['fio'])) {
+} elseif (!preg_match('/^[a-zA-Zа-яА-Я\s]{1,150}$/u', $values['fio'])) {
     $errors[] = 'ФИО должно содержать только буквы и пробелы и быть не длиннее 150 символов.';
 }
 
 // Проверка поля Телефон
-if (empty($_POST['phone'])) {
+if (empty($values['phone'])) {
     $errors[] = 'Заполните телефон.';
-} elseif (!preg_match('/^\+?\d{10,15}$/', $_POST['phone'])) {
+} elseif (!preg_match('/^\+?\d{10,15}$/', $values['phone'])) {
     $errors[] = 'Телефон должен быть в формате +7XXXXXXXXXX или XXXXXXXXXX.';
 }
 
 // Проверка поля Email
-if (empty($_POST['email'])) {
+if (empty($values['email'])) {
     $errors[] = 'Заполните email.';
-} elseif (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+} elseif (!filter_var($values['email'], FILTER_VALIDATE_EMAIL)) {
     $errors[] = 'Некорректный email.';
 }
 
 // Проверка поля Дата рождения
-if (empty($_POST['dob'])) {
+if (empty($values['dob'])) {
     $errors[] = 'Заполните дату рождения.';
-} elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['dob'])) {
+} elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $values['dob'])) {
     $errors[] = 'Некорректный формат даты рождения.';
 }
 
 // Проверка поля Пол
-if (empty($_POST['gender'])) {
+if (empty($values['gender'])) {
     $errors[] = 'Выберите пол.';
-} elseif (!in_array($_POST['gender'], ['male', 'female'])) {
+} elseif (!in_array($values['gender'], ['male', 'female'])) {
     $errors[] = 'Некорректное значение пола.';
 }
 
 // Проверка поля Любимый язык программирования
-if (empty($_POST['languages'])) {
+$allowedLanguages = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
+if (empty($values['languages'])) {
     $errors[] = 'Выберите хотя бы один язык программирования.';
 } else {
-    $allowedLanguages = ['Pascal', 'C', 'C++', 'JavaScript', 'PHP', 'Python', 'Java', 'Haskell', 'Clojure', 'Prolog', 'Scala', 'Go'];
-    foreach ($_POST['languages'] as $language) {
+    foreach ($values['languages'] as $language) {
         if (!in_array($language, $allowedLanguages)) {
             $errors[] = 'Некорректный язык программирования.';
             break;
@@ -63,85 +83,71 @@ if (empty($_POST['languages'])) {
 }
 
 // Проверка поля Биография
-if (empty($_POST['bio'])) {
+if (empty($values['bio'])) {
     $errors[] = 'Заполните биографию.';
 }
 
 // Проверка чекбокса "С контрактом ознакомлен"
-$contract = isset($_POST['contract']) && $_POST['contract'] ? 1 : 0;
-if (!$contract) {
+if (!$values['contract']) {
     $errors[] = 'Необходимо ознакомиться с контрактом.';
 }
 
-// Если есть ошибки, выводим их и завершаем выполнение
+// Если есть ошибки, передаем их в form.php и не завершаем выполнение скрипта
 if (!empty($errors)) {
-    foreach ($errors as $error) {
-        print($error . '<br>');
-    }
+    include('form.php');
     exit();
 }
 
 // Подключение к базе данных
-$user = 'u68818'; // Логин по умолчанию
-$pass = '9972335'; // Пароль по умолчанию
+$user = 'u68818';
+$pass = '9972335';
 $db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [
     PDO::ATTR_PERSISTENT => true,
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
 ]);
 
 try {
-    // Начало транзакции
     $db->beginTransaction();
 
-    // Сохранение основной информации о заявке
     $stmt = $db->prepare("INSERT INTO applications (fio, phone, email, dob, gender, bio, contract) 
                           VALUES (:fio, :phone, :email, :dob, :gender, :bio, :contract)");
     $stmt->execute([
-        ':fio' => $_POST['fio'],
-        ':phone' => $_POST['phone'],
-        ':email' => $_POST['email'],
-        ':dob' => $_POST['dob'],
-        ':gender' => $_POST['gender'],
-        ':bio' => $_POST['bio'],
-        ':contract' => $contract
+        ':fio' => $values['fio'],
+        ':phone' => $values['phone'],
+        ':email' => $values['email'],
+        ':dob' => $values['dob'],
+        ':gender' => $values['gender'],
+        ':bio' => $values['bio'],
+        ':contract' => $values['contract']
     ]);
 
-    // Получение ID последней вставленной записи
     $application_id = $db->lastInsertId();
 
-    // Сохранение выбранных языков программирования
     $stmt = $db->prepare("SELECT id FROM programming_languages WHERE name = :name");
     $insertLang = $db->prepare("INSERT INTO programming_languages (name) VALUES (:name)");
     $linkStmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (:application_id, :language_id)");
 
-    foreach ($_POST['languages'] as $language) {
-        // Проверяем, существует ли язык в таблице programming_languages
+    foreach ($values['languages'] as $language) {
         $stmt->execute([':name' => $language]);
         $languageData = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$languageData) {
-            // Если язык не существует, добавляем его
             $insertLang->execute([':name' => $language]);
             $language_id = $db->lastInsertId();
         } else {
-            // Если язык существует, используем его ID
             $language_id = $languageData['id'];
         }
 
-        // Связываем заявку с языком программирования
         $linkStmt->execute([
             ':application_id' => $application_id,
             ':language_id' => $language_id
         ]);
     }
 
-    // Завершение транзакции
     $db->commit();
 
-    // Перенаправление на страницу с сообщением об успешном сохранении
     header('Location: ?save=1');
 } catch (PDOException $e) {
-    // Откат транзакции в случае ошибки
     $db->rollBack();
     print('Ошибка при сохранении данных: ' . $e->getMessage());
     exit();
