@@ -90,7 +90,7 @@ $db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [
 
 try {
     // Сохранение основной информации о заявке
-    $stmt = $db->prepare("INSERT INTO application (fio, phone, email, dob, gender, bio, contract) 
+    $stmt = $db->prepare("INSERT INTO applications (fio, phone, email, dob, gender, bio, contract) 
                           VALUES (:fio, :phone, :email, :dob, :gender, :bio, :contract)");
     $stmt->execute([
         ':fio' => $_POST['fio'],
