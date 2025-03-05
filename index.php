@@ -68,7 +68,8 @@ if (empty($_POST['bio'])) {
 }
 
 // Проверка чекбокса "С контрактом ознакомлен"
-if (empty($_POST['contract'])) {
+$contract = isset($_POST['contract']) && $_POST['contract'] ? 1 : 0;
+if (!$contract) {
     $errors[] = 'Необходимо ознакомиться с контрактом.';
 }
 
@@ -89,6 +90,9 @@ $db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [
 ]);
 
 try {
+    // Начало транзакции
+    $db->beginTransaction();
+
     // Сохранение основной информации о заявке
     $stmt = $db->prepare("INSERT INTO applications (fio, phone, email, dob, gender, bio, contract) 
                           VALUES (:fio, :phone, :email, :dob, :gender, :bio, :contract)");
@@ -99,24 +103,46 @@ try {
         ':dob' => $_POST['dob'],
         ':gender' => $_POST['gender'],
         ':bio' => $_POST['bio'],
-        ':contract' => $_POST['contract'] ? 1 : 0
+        ':contract' => $contract
     ]);
 
     // Получение ID последней вставленной записи
     $application_id = $db->lastInsertId();
 
     // Сохранение выбранных языков программирования
-    $stmt = $db->prepare("INSERT INTO application_languages (application_id, language) VALUES (:application_id, :language)");
+    $stmt = $db->prepare("SELECT id FROM programming_languages WHERE name = :name");
+    $insertLang = $db->prepare("INSERT INTO programming_languages (name) VALUES (:name)");
+    $linkStmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (:application_id, :language_id)");
+
     foreach ($_POST['languages'] as $language) {
-        $stmt->execute([
+        // Проверяем, существует ли язык в таблице programming_languages
+        $stmt->execute([':name' => $language]);
+        $languageData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$languageData) {
+            // Если язык не существует, добавляем его
+            $insertLang->execute([':name' => $language]);
+            $language_id = $db->lastInsertId();
+        } else {
+            // Если язык существует, используем его ID
+            $language_id = $languageData['id'];
+        }
+
+        // Связываем заявку с языком программирования
+        $linkStmt->execute([
             ':application_id' => $application_id,
-            ':language' => $language
+            ':language_id' => $language_id
         ]);
     }
+
+    // Завершение транзакции
+    $db->commit();
 
     // Перенаправление на страницу с сообщением об успешном сохранении
     header('Location: ?save=1');
 } catch (PDOException $e) {
+    // Откат транзакции в случае ошибки
+    $db->rollBack();
     print('Ошибка при сохранении данных: ' . $e->getMessage());
     exit();
 }
