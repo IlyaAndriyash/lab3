@@ -106,7 +106,7 @@ try {
     $application_id = $db->lastInsertId();
 
     // Сохранение выбранных языков программирования
-    $stmt = $db->prepare("INSERT INTO languages (application_id, language) VALUES (:application_id, :language)");
+    $stmt = $db->prepare("INSERT INTO application_languages (application_id, language) VALUES (:application_id, :language)");
     foreach ($_POST['languages'] as $language) {
         $stmt->execute([
             ':application_id' => $application_id,
