@@ -81,9 +81,9 @@ if (!empty($errors)) {
 }
 
 // Подключение к базе данных
-$user = 'root'; // Логин по умолчанию
-$pass = 'root'; // Пароль по умолчанию
-$db = new PDO('mysql:host=localhost;dbname=myapp_db', $user, $pass, [
+$user = 'u68818'; // Логин по умолчанию
+$pass = '9972335'; // Пароль по умолчанию
+$db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [
     PDO::ATTR_PERSISTENT => true,
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
 ]);
