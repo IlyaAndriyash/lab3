@@ -2,10 +2,21 @@
 // Устанавливаем кодировку UTF-8
 header('Content-Type: text/html; charset=UTF-8');
 
+// Начинаем сессию
+session_start();
+
 // Если метод GET – просто отображаем форму
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     if (!empty($_GET['save'])) {
         print('Спасибо, результаты сохранены.');
+    }
+    // Если есть ошибки в сессии, выводим их
+    if (!empty($_SESSION['errors'])) {
+        foreach ($_SESSION['errors'] as $error) {
+            print($error . '<br>');
+        }
+        // Очищаем ошибки после вывода
+        unset($_SESSION['errors']);
     }
     include('form.php');
     exit();
@@ -73,11 +84,10 @@ if (!$contract) {
     $errors[] = 'Необходимо ознакомиться с контрактом.';
 }
 
-// Если есть ошибки, выводим их и завершаем выполнение
+// Если есть ошибки, сохраняем их в сессию и перенаправляем обратно на форму
 if (!empty($errors)) {
-    foreach ($errors as $error) {
-        print($error . '<br>');
-    }
+    $_SESSION['errors'] = $errors;
+    header('Location: ' . $_SERVER['HTTP_REFERER']);
     exit();
 }
 
@@ -143,7 +153,8 @@ try {
 } catch (PDOException $e) {
     // Откат транзакции в случае ошибки
     $db->rollBack();
-    print('Ошибка при сохранении данных: ' . $e->getMessage());
+    $_SESSION['errors'] = ['Ошибка при сохранении данных: ' . $e->getMessage()];
+    header('Location: ' . $_SERVER['HTTP_REFERER']);
     exit();
 }
 ?>
