@@ -75,6 +75,21 @@
 <body>
     <div class="form-container">
         <h2>Форма</h2>
+                <?php
+        // Начинаем сессию
+        session_start();
+        
+        // Если есть ошибки в сессии, выводим их
+        if (!empty($_SESSION['errors'])) {
+            echo '<div style="color: red;">';
+            foreach ($_SESSION['errors'] as $error) {
+                echo htmlspecialchars($error) . '<br>';
+            }
+            echo '</div>';
+            // Очищаем ошибки после вывода
+            unset($_SESSION['errors']);
+        }
+        ?>
         <form action="index.php" method="POST">
         <!-- Поле ФИО -->
             <label for="fio">ФИО:</label>
