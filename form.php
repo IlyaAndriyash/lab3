@@ -77,7 +77,10 @@
         <h2>Форма</h2>
                 <?php
         // Начинаем сессию
-        session_start();
+       // Проверяем, активна ли сессия, и только если нет — запускаем её
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
         
         // Если есть ошибки в сессии, выводим их
         if (!empty($_SESSION['errors'])) {
