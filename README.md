@@ -1,4 +1,5 @@
 Создание таблицы заявок (applications):
+
 ```SQL
 CREATE TABLE IF NOT EXISTS applications (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS applications (
   contract TINYINT(1) NOT NULL
 );
 ```
+
 Создание таблицы языков программирования (programming_languages):
 
 ```SQL
@@ -18,8 +20,9 @@ CREATE TABLE IF NOT EXISTS programming_languages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) NOT NULL UNIQUE
 );
-Создание таблицы связи между заявками и языками программирования (application_languages):
 ```
+
+Создание таблицы связи между заявками и языками программирования (application_languages):
 
 ```SQL
 CREATE TABLE IF NOT EXISTS application_languages (
