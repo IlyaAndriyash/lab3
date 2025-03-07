@@ -1,7 +1,7 @@
 Создание таблицы заявок (applications):
 
 ```SQL
-CREATE TABLE IF NOT EXISTS applications (
+CREATE TABLE applications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   fio VARCHAR(150) NOT NULL,
   phone VARCHAR(15) NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS applications (
 Создание таблицы языков программирования (programming_languages):
 
 ```SQL
-CREATE TABLE IF NOT EXISTS programming_languages (
+CREATE TABLE programming_languages (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(50) NOT NULL UNIQUE
 );
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS programming_languages (
 Создание таблицы связи между заявками и языками программирования (application_languages):
 
 ```SQL
-CREATE TABLE IF NOT EXISTS application_languages (
+CREATE TABLE application_languages (
   application_id INT NOT NULL,
   language_id INT NOT NULL,
   PRIMARY KEY (application_id, language_id),
