@@ -2,33 +2,25 @@
 // Устанавливаем кодировку UTF-8
 header('Content-Type: text/html; charset=UTF-8');
 
-// Начинаем сессию
-session_start();
-
-// Если метод GET – просто отображаем форму
+// Если метод запроса GET, просто отображаем форму
 if ($_SERVER['REQUEST_METHOD'] == 'GET') {
-    //Если в URL есть параметр save=1, выводится сообщение "Спасибо, результаты сохранены."
+    // Если есть параметр save, выводим сообщение об успешном сохранении
     if (!empty($_GET['save'])) {
         print('Спасибо, результаты сохранены.');
     }
-    // Если есть ошибки в сессии, выводим их
-    if (!empty($_SESSION['errors'])) {
-        foreach ($_SESSION['errors'] as $error) {
-            print($error . '<br>');
-        }
-        // Очищаем ошибки после вывода
-        unset($_SESSION['errors']);
-    }
+    // Подключаем файл с формой
     include('form.php');
     exit();
 }
-//Если не залезли в GET значит был POST и идем дальше
-// Инициализируем массив для ошибок, в который добавляются сообщения об ошибках, если какое-то поле не заполнено или заполнено неправильно.
+
+// Иначе, если запрос был методом POST, проверяем данные и сохраняем их в БД
+
+// Инициализируем массив для ошибок
 $errors = [];
 
 // Проверка поля ФИО
 if (empty($_POST['fio'])) {
-    $errors[] = 'Заполните ФИО.'; //Если поле пустое добавляется в массив сообщение об ошибке
+    $errors[] = 'Заполните ФИО.';
 } elseif (!preg_match('/^[a-zA-Zа-яА-Я\s]{1,150}$/u', $_POST['fio'])) {
     $errors[] = 'ФИО должно содержать только буквы и пробелы и быть не длиннее 150 символов.';
 }
@@ -80,46 +72,33 @@ if (empty($_POST['bio'])) {
 }
 
 // Проверка чекбокса "С контрактом ознакомлен"
-$contract = isset($_POST['contract']) && $_POST['contract'] ? 1 : 0;
-if (!$contract) {
+if (empty($_POST['contract'])) {
     $errors[] = 'Необходимо ознакомиться с контрактом.';
 }
 
-// Если есть ошибки, сохраняем их в сессию и перенаправляем обратно на форму
+// Если есть ошибки, выводим их и завершаем выполнение скрипта
 if (!empty($errors)) {
-    $_SESSION['errors'] = $errors; // Если есть ошибки, они сохраняются в суперглобальном массиве $_SESSION под ключом 'errors'. Это позволяет передать ошибки на другую страницу.
-    header('Location: ' . $_SERVER['HTTP_REFERER']); //После сохранения ошибок в сессии,
-    //пользователь перенаправляется на страницу, с которой он пришёл. 
-    //Это делается с помощью функции header(), которая устанавливает заголовок HTTP для перенаправления. $_SERVER['HTTP_REFERER'] содержит URL предыдущей страницы.
+    foreach ($errors as $error) {
+        print($error . '<br>');
+    }
     exit();
 }
 
 // Подключение к базе данных
-$user = 'u68818'; // Логин по умолчанию
-$pass = '9972335'; // Пароль по умолчанию 
-$db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [  //Создаёт объект PDO PHP Data Objects , который представляет собой подключение к базе данных.
-              //'mysql:host=localhost;dbname=u68818': Это строка подключения (DSN), которая указывает:
-                //mysql: Используемый драйвер (в данном случае MySQL).
-                //host=localhost: Хост, на котором расположена база данных (в данном случае локальный компьютер).
-                //dbname=u68818: Название базы данных.
+$user = 'u68818'; // Замените на ваш логин
+$pass = '9972335'; // Замените на ваш пароль
+$db = new PDO('mysql:host=localhost;dbname=u68818', $user, $pass, [
     PDO::ATTR_PERSISTENT => true,
-              //Устанавливает постоянное подключение. Это означает, что подключение будет 
-              //сохранено между запросами, что может улучшить производительность.
     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-              //Устанавливает режим обработки ошибок.
-              //В этом случае, если возникает ошибка, будет выброшено исключение (PDOException), которое можно поймать и обработать с помощью блоков try-catch.
 ]);
 
 try {
     // Начало транзакции
-    $db->beginTransaction(); //Начинает транзакцию. Это означает, что все операции, 
-    //выполняемые внутри транзакции, будут либо полностью выполнены, либо полностью отменены (откатятся), если возникнет ошибка.
-
-
+    $db->beginTransaction();
 
     // Сохранение основной информации о заявке
     $stmt = $db->prepare("INSERT INTO applications (fio, phone, email, dob, gender, bio, contract) 
-                          VALUES (:fio, :phone, :email, :dob, :gender, :bio, :contract)"); // Подготавливает запрос на вставку данных в таблицу applications.
+                          VALUES (:fio, :phone, :email, :dob, :gender, :bio, :contract)");
     $stmt->execute([
         ':fio' => $_POST['fio'],
         ':phone' => $_POST['phone'],
@@ -127,70 +106,43 @@ try {
         ':dob' => $_POST['dob'],
         ':gender' => $_POST['gender'],
         ':bio' => $_POST['bio'],
-        ':contract' => $contract
-    ]); //Выполняет подготовленный запрос с данными из формы ($_POST).
+        ':contract' => isset($_POST['contract']) ? 1 : 0
+    ]);
 
     // Получение ID последней вставленной записи
-    $application_id = $db->lastInsertId(); // Получает ID последней вставленной записи, который будет использован для связи заявки с языками программирования.
+    $application_id = $db->lastInsertId();
 
     // Сохранение выбранных языков программирования
-    $stmt = $db->prepare("SELECT id FROM programming_languages WHERE name = :name"); //Подготавливает запрос для проверки существования языка программирования в таблице programming_languages.
-    $insertLang = $db->prepare("INSERT INTO programming_languages (name) VALUES (:name)"); // Подготавливает запрос для добавления нового языка программирования, если он не существует.
-    $linkStmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) VALUES (:application_id, :language_id)"); //Подготавливает запрос для создания связи между заявкой и языком программирования.                                                                                                                                                         
+    $stmt = $db->prepare("SELECT id FROM programming_languages WHERE name = :name");
+    $insertLang = $db->prepare("INSERT INTO programming_languages (name) VALUES (:name)");
+    $linkStmt = $db->prepare("INSERT INTO application_languages (application_id, language_id) 
+                              VALUES (:application_id, :language_id)");
 
+    foreach ($_POST['languages'] as $language) {
+        $stmt->execute([':name' => $language]);
+        $languageData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-    foreach ($_POST['languages'] as $language) { //Перебирает каждый выбранный язык программирования.
-        // Проверяем, существует ли язык в таблице programming_languages
-        $stmt->execute([':name' => $language]); //Выполняет подготовленный SQL-запрос, который проверяет, существует ли язык программирования в таблице programming_languages. 
-                                                //В запросе используется параметр :name, который заменяется текущим значением $language.
-        $languageData = $stmt->fetch(PDO::FETCH_ASSOC); //Получает результат выполнения запроса.
-                                                //Если язык найден в таблице, $languageData будет содержать ассоциативный массив с данными о языке. Если язык не найден, $languageData будет false.
-
-
-
-        if (!$languageData) { //Проверяет, найден ли язык в таблице. Если $languageData равно false, это означает, что язык не существует в таблице.
-
-            // Если язык не существует, добавляем его
-            $insertLang->execute([':name' => $language]); // Выполняет подготовленный SQL-запрос, который проверяет, 
-            //существует ли язык программирования в таблице programming_languages. В запросе используется параметр :name, который заменяется текущим значением $language.
-            $language_id = $db->lastInsertId();// После добавления нового языка получает его ID, 
-                             //который был автоматически присвоен базой данных. Этот ID будет использован для связи заявки с языком программирования.
-
-
-        } else { //Если язык уже существует в таблице, выполняется этот блок кода
-            // Если язык существует, получает его ID из массива $languageData.
+        if (!$languageData) {
+            $insertLang->execute([':name' => $language]);
+            $language_id = $db->lastInsertId();
+        } else {
             $language_id = $languageData['id'];
         }
 
-        // Связываем заявку с языком программирования
         $linkStmt->execute([
             ':application_id' => $application_id,
             ':language_id' => $language_id
         ]);
     }
 
-    $db->commit(); //Если все операции внутри транзакции выполнены успешно, подтверждает транзакцию, сохраняя все изменения в базе данных.
-
-
+    // Завершение транзакции
+    $db->commit();
 
     // Перенаправление на страницу с сообщением об успешном сохранении
     header('Location: ?save=1');
-} catch (PDOException $e) { //Если во время выполнения транзакции возникает ошибка, 
-                           //связанная с базой данных (например, дубликат записи, нарушение целостности данных и т.п.), выполняется блок кода внутри catch.
-
-
+} catch (PDOException $e) {
     // Откат транзакции в случае ошибки
-    $db->rollBack(); //Отменяет все изменения, сделанные внутри транзакции, чтобы база данных осталась в последовательном состоянии.
-
-
-    $_SESSION['errors'] = ['Ошибка при сохранении данных: ' . $e->getMessage()];//Сохраняет сообщение об ошибке в сессии. 
-                           //Это сообщение будет доступно на следующей странице и может быть выведено пользователю.
-
-
-    header('Location: ' . $_SERVER['HTTP_REFERER']); //Перенаправляет пользователя на предыдущую страницу, с которой он пришёл. Это позволяет пользователю увидеть ошибку и исправить данные.
-
-
+    $db->rollBack();
+    print('Ошибка при сохранении данных: ' . $e->getMessage());
     exit();
 }
-?>
