@@ -5,14 +5,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Форма</title>
     <style>
-        /* Ваши стили */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        
+        .form-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        input[type="text"], input[type="tel"], input[type="email"], input[type="date"], select, textarea {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        input[type="radio"] {
+            
+            margin-right: 10px;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        
+        .radio-group  {
+            margin-bottom: 20px;
+        }
+        .radio-group label {
+          display: inline;}
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group label {
+            margin-left: 10px;
+            padding-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="form-container">
         <h2>Форма</h2>
         <form action="index.php" method="POST">
-            <!-- Поле ФИО -->
+        <!-- Поле ФИО -->
             <label for="fio">ФИО:</label>
             <input type="text" name="fio" id="fio" required>
 
@@ -37,6 +101,7 @@
                 <label for="female">Женский</label>
             </div>
 
+
             <!-- Поле Любимый язык программирования -->
             <label for="languages">Любимый язык программирования:</label>
             <select name="languages[]" id="languages" multiple required>
@@ -60,8 +125,9 @@
 
             <!-- Чекбокс "С контрактом ознакомлен" -->
             <div class="checkbox-group">
+            <label for="contract">С контрактом ознакомлен:</label>
+
                 <input type="checkbox" name="contract" id="contract" required>
-                <label for="contract">С контрактом ознакомлен:</label>
             </div>
 
             <!-- Кнопка отправки формы -->
@@ -69,4 +135,4 @@
         </form>
     </div>
 </body>
-</html>
+</html> Это form.php
